@@ -46,13 +46,12 @@ if (typeof window !== "undefined") {
       message.includes("metamask-inpage") ||
       message.includes("metamask_chainChanged") ||
       message.includes("chainChanged") ||
-      (message.includes("target") && message.includes("metamask"))
+      (message.includes("target") && message.includes("metamask")) ||
+      (message.includes('"target":"metamask-inpage"')) ||
+      (message.includes('"name":"metamask-provider"'))
     ) {
       return; // Metamask loglarını gösterme
     }
     originalLog.apply(console, args);
   };
 }
-
-
-
