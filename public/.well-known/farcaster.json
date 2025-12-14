@@ -3,9 +3,9 @@
     "version": "1",
     "name": "Harita",
     "homeUrl": "https://haritam1.vercel.app/",
-    "iconUrl": "https://haritam1.vercel.app/logo.png",
-    "imageUrl": "https://haritam1.vercel.app/imageurl23.png",
-    "splashImageUrl": "https://haritam1.vercel.app/logo.png",
+    "iconUrl": "/logo.png",
+    "imageUrl": "/1.png",
+    "splashImageUrl": "/logo.png",
     "splashBackgroundColor": "#d4a657",
     "primaryCategory": "social",
     "tags": ["harita", "maps", "places", "location", "base"]

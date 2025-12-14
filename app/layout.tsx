@@ -11,7 +11,7 @@ const miniapp = {
   name: "Harita",
   version: "1",
   homeUrl: "https://haritam1.vercel.app/",
-  imageUrl: "https://haritam1.vercel.app/1.png",
+  imageUrl: "/1.png",
   // Relative path kullan (32 karakter limit için)
   splashImageUrl: "/logo.png",
   splashBackgroundColor: "#d4a657",
