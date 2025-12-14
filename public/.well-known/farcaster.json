@@ -1,0 +1,12 @@
+{
+  "miniapp": {
+    "version": "1",
+    "name": "Harita",
+    "homeUrl": "https://haritam1.vercel.app/",
+    "iconUrl": "https://haritam1.vercel.app/logo.png",
+    "splashImageUrl": "https://haritam1.vercel.app/logo.png",
+    "splashBackgroundColor": "#d4a657",
+    "primaryCategory": "social",
+    "tags": ["harita", "maps", "places", "location", "base"]
+  }
+}
