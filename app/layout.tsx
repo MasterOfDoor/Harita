@@ -53,6 +53,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="base:app_id" content="693c58eb8a7c4e55fec73fec" />
       </head>
       <body className={inter.className}>
         <MiniKitProvider>
