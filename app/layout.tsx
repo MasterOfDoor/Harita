@@ -6,22 +6,41 @@ import { MiniKitProvider } from "./components/MiniKitProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// Farcaster Mini App metadata
+const miniapp = {
+  name: "Harita",
+  version: "1",
+  homeUrl: "https://haritam1.vercel.app/",
+  imageUrl: "https://ibb.co/vxCHv4TY",
+};
+
 export const metadata: Metadata = {
-  title: "Harita Uygulamasi",
+  title: miniapp.name,
   description: "Yakın mekanlar harita uygulaması - Base Mini App",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Harita Uygulamasi",
+    title: miniapp.name,
   },
   openGraph: {
-    title: "Harita Uygulamasi",
+    title: miniapp.name,
     description: "Yakın mekanlar harita uygulaması",
     type: "website",
   },
   other: {
     "base:app_id": "693c58eb8a7c4e55fec73fec",
+    "fc:miniapp": JSON.stringify({
+      version: miniapp.version,
+      imageUrl: miniapp.imageUrl,
+      button: {
+        title: `${miniapp.name}'a Katıl`,
+        action: {
+          type: "launch_frame",
+          url: miniapp.homeUrl,
+        },
+      },
+    }),
   },
 };
 
@@ -61,47 +80,6 @@ export default function RootLayout({
         <MiniKitProvider>
           {children}
         </MiniKitProvider>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Base Mini App ready callback - Immediate execution
-              (function() {
-                function callReady() {
-                  // Base Mini App SDK ready callback
-                  if (window.miniKit && typeof window.miniKit.ready === 'function') {
-                    try {
-                      window.miniKit.ready();
-                    } catch (e) {}
-                  }
-                  
-                  // Alternative: Coinbase SDK ready callback
-                  if (window.coinbaseSDK && typeof window.coinbaseSDK.ready === 'function') {
-                    try {
-                      window.coinbaseSDK.ready();
-                    } catch (e) {}
-                  }
-                  
-                  // Dispatch ready event
-                  window.dispatchEvent(new Event('minikit:ready'));
-                }
-                
-                // Call immediately
-                callReady();
-                
-                // Also call when DOM is ready
-                if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', callReady);
-                } else {
-                  callReady();
-                }
-                
-                // Also call after a short delay to ensure SDK is loaded
-                setTimeout(callReady, 100);
-                setTimeout(callReady, 500);
-              })();
-            `,
-          }}
-        />
       </body>
     </html>
   );
