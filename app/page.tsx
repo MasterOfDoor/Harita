@@ -158,9 +158,11 @@ export default function Home() {
         console.log(`[Chain Changed] MetaMask chain changed to ${chainIdNum} in Base Mini App - ignoring`);
         // Base Sepolia chain'e geri geç
         if (chainIdNum !== BASE_SEPOLIA_CHAIN_ID) {
-          switchChain({ chainId: BASE_SEPOLIA_CHAIN_ID }).catch((err) => {
+          try {
+            switchChain({ chainId: BASE_SEPOLIA_CHAIN_ID });
+          } catch (err: any) {
             console.error("[Chain Changed] Error switching back to Base Sepolia:", err);
-          });
+          }
         }
         return;
       }

@@ -44,3 +44,6 @@ apiler.txt
 *.secret
 ENV_SETUP.md
 
+# Old/unused directories
+VibelyMap/
+
