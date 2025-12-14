@@ -30,6 +30,12 @@ const nextConfig = {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
+  // Optimize build output
+  output: 'standalone',
+  // Reduce build time
+  swcMinify: true,
+  // Compress output
+  compress: true,
 }
 
 export default nextConfig
