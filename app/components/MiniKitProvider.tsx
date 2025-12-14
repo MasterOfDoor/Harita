@@ -28,7 +28,7 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
     })
   );
 
-  // Base Mini App ortamında MetaMask provider'ını ignore et
+  // Base Mini App ortamında doğru provider'ı seç ve MetaMask'i ignore et
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -39,22 +39,38 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
       window.location.href.includes("base.org") ||
       window.location.href.includes("coinbase.com");
 
-    if (isBaseMiniApp && (window as any).ethereum) {
-      // MetaMask provider'ını geçici olarak gizle (Base Wallet'ı tercih et)
-      const originalEthereum = (window as any).ethereum;
+    if (!isBaseMiniApp) return;
+
+    const ethereum = (window as any).ethereum;
+    if (!ethereum) return;
+
+    // Provider bilgilerini logla (debug için)
+    console.log("[Provider Selection] Detected providers:", {
+      isMetaMask: ethereum.isMetaMask,
+      isCoinbaseWallet: ethereum.isCoinbaseWallet,
+      isCoinbaseBrowser: ethereum.isCoinbaseBrowser,
+      hasProvidersArray: Array.isArray(ethereum.providers),
+      providersCount: Array.isArray(ethereum.providers) ? ethereum.providers.length : 0,
+    });
+
+    // Eğer providers array varsa, Coinbase Wallet'ı tercih et
+    if (Array.isArray(ethereum.providers)) {
+      const coinbaseProvider = ethereum.providers.find(
+        (p: any) => p.isCoinbaseWallet || p.isCoinbaseBrowser || p.isCoinbase
+      );
       
-      // Eğer MetaMask ise ve Base Wallet varsa, MetaMask'i ignore et
-      if (originalEthereum.isMetaMask && !originalEthereum.isCoinbaseWallet) {
-        // providers array varsa, Coinbase Wallet'ı tercih et
-        if (Array.isArray(originalEthereum.providers)) {
-          const coinbaseProvider = originalEthereum.providers.find(
-            (p: any) => p.isCoinbaseWallet || p.isCoinbaseBrowser
-          );
-          if (coinbaseProvider) {
-            (window as any).ethereum = coinbaseProvider;
-          }
-        }
+      if (coinbaseProvider) {
+        console.log("[Provider Selection] Using Coinbase Wallet provider from providers array");
+        (window as any).ethereum = coinbaseProvider;
+        return;
       }
+    }
+
+    // Eğer direkt MetaMask ise ve Coinbase Wallet yoksa, uyar
+    if (ethereum.isMetaMask && !ethereum.isCoinbaseWallet && !ethereum.isCoinbaseBrowser) {
+      console.warn("[Provider Selection] MetaMask detected in Base Mini App. This may cause chain issues.");
+      // Base Mini App'te MetaMask kullanılmamalı, ama zorla değiştiremeyiz
+      // Sadece uyarı veriyoruz
     }
   }, []);
 

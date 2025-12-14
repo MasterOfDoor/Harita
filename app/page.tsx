@@ -50,23 +50,116 @@ export default function Home() {
     }
   }, []);
 
-  // Base chain'e geçiş kontrolü ve otomatik switch
+  // Provider kontrolü ve Base chain'e geçiş
   useEffect(() => {
     if (!isConnected || !isMounted) return;
+
+    // Provider bilgilerini kontrol et
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      const ethereum = (window as any).ethereum;
+      console.log("[Provider Check] Current provider:", {
+        isMetaMask: ethereum.isMetaMask,
+        isCoinbaseWallet: ethereum.isCoinbaseWallet,
+        isCoinbaseBrowser: ethereum.isCoinbaseBrowser,
+        chainId: chainId,
+      });
+    }
 
     // Base chain ID: 8453 (0x2105)
     const BASE_CHAIN_ID = base.id; // 8453
 
     // Eğer Base chain'de değilsek, switch et
     if (chainId !== BASE_CHAIN_ID) {
-      console.log(`[Chain Switch] Current chain: ${chainId}, switching to Base: ${BASE_CHAIN_ID}`);
-      try {
-        switchChain({ chainId: BASE_CHAIN_ID });
-      } catch (error) {
-        console.error("[Chain Switch] Error switching to Base:", error);
-      }
+      console.log(`[Chain Switch] Current chain: ${chainId} (0x${chainId.toString(16)}), switching to Base: ${BASE_CHAIN_ID} (0x${BASE_CHAIN_ID.toString(16)})`);
+      
+      // Base chain'e geçiş yap
+      const switchToBase = async () => {
+        try {
+          await switchChain({ chainId: BASE_CHAIN_ID });
+        } catch (error: any) {
+          // Eğer chain tanınmıyorsa, ekle
+          if (error?.code === 4902 || error?.message?.includes("Unrecognized chain")) {
+            console.log("[Chain Switch] Base chain not found, adding chain...");
+            try {
+              const ethereum = (window as any).ethereum;
+              if (ethereum) {
+                await ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [
+                    {
+                      chainId: `0x${BASE_CHAIN_ID.toString(16)}`,
+                      chainName: "Base",
+                      nativeCurrency: {
+                        name: "ETH",
+                        symbol: "ETH",
+                        decimals: 18,
+                      },
+                      rpcUrls: ["https://mainnet.base.org"],
+                      blockExplorerUrls: ["https://basescan.org"],
+                    },
+                  ],
+                });
+                // Chain eklendikten sonra tekrar switch et
+                await switchChain({ chainId: BASE_CHAIN_ID });
+              }
+            } catch (addError) {
+              console.error("[Chain Switch] Error adding Base chain:", addError);
+            }
+          } else {
+            console.error("[Chain Switch] Error switching to Base:", error);
+          }
+        }
+      };
+
+      switchToBase();
+    } else {
+      console.log(`[Chain Switch] Already on Base chain: ${chainId}`);
     }
   }, [isConnected, isMounted, chainId, switchChain]);
+
+  // chainChanged listener'ını ekle (MetaMask loglarını önlemek için)
+  useEffect(() => {
+    if (typeof window === "undefined" || !isMounted) return;
+
+    const ethereum = (window as any).ethereum;
+    if (!ethereum) return;
+
+    // Base Mini App ortamında mıyız kontrol et
+    const isBaseMiniApp = 
+      (window as any).miniKit || 
+      (window as any).coinbaseSDK ||
+      window.location.href.includes("base.org") ||
+      window.location.href.includes("coinbase.com");
+
+    // Base Mini App'te MetaMask chainChanged event'lerini ignore et
+    const handleChainChanged = (chainId: string | number) => {
+      const chainIdNum = typeof chainId === "string" ? parseInt(chainId, 16) : chainId;
+      const BASE_CHAIN_ID = base.id; // 8453
+
+      // Eğer Base Mini App'teysek ve MetaMask provider'ı kullanılıyorsa
+      if (isBaseMiniApp && ethereum.isMetaMask && !ethereum.isCoinbaseWallet) {
+        console.log(`[Chain Changed] MetaMask chain changed to ${chainIdNum} in Base Mini App - ignoring`);
+        // Base chain'e geri geç
+        if (chainIdNum !== BASE_CHAIN_ID) {
+          switchChain({ chainId: BASE_CHAIN_ID }).catch((err) => {
+            console.error("[Chain Changed] Error switching back to Base:", err);
+          });
+        }
+        return;
+      }
+
+      // Normal chain changed handling (Base Wallet için)
+      console.log(`[Chain Changed] Chain changed to: ${chainIdNum} (0x${chainIdNum.toString(16)})`);
+    };
+
+    // Listener'ı ekle
+    ethereum.on?.("chainChanged", handleChainChanged);
+
+    // Cleanup: Listener'ı kaldır
+    return () => {
+      ethereum.removeListener?.("chainChanged", handleChainChanged);
+    };
+  }, [isMounted, switchChain]);
   const { places, loading: placesLoading, loadPlaces, setPlaces } = useMapPlaces();
   const {
     isSearchOpen,
