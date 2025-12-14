@@ -1,7 +1,8 @@
 // Console hatalarını suppress et (development için)
-if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+if (typeof window !== "undefined") {
   const originalError = console.error;
   const originalWarn = console.warn;
+  const originalLog = console.log;
 
   console.error = (...args: any[]) => {
     // Coinbase Analytics ve ad blocker hatalarını ignore et
@@ -28,6 +29,21 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
     }
     originalWarn.apply(console, args);
   };
+
+  // Metamask loglarını suppress et (Base Mini App'te Metamask kullanılmıyor)
+  console.log = (...args: any[]) => {
+    const message = JSON.stringify(args);
+    if (
+      message.includes("metamask") ||
+      message.includes("metamask-provider") ||
+      message.includes("metamask-inpage") ||
+      message.includes("metamask_chainChanged")
+    ) {
+      return; // Metamask loglarını gösterme
+    }
+    originalLog.apply(console, args);
+  };
 }
+
 
 

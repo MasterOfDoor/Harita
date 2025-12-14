@@ -65,3 +65,4 @@ Base Mini App'lerde logo şu yerlerde kullanılır:
 Şu an projede `logo.svg` kullanılıyor. Kendi logonuzu ekledikten sonra yukarıdaki dosyalarda gerekli güncellemeleri yapın.
 
 
+

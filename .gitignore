@@ -42,4 +42,5 @@ all_food_places.json
 apiler.txt
 *.key
 *.secret
+ENV_SETUP.md
 

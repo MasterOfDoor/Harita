@@ -115,3 +115,4 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 **Not:** Bu uygulama Base Mini App olarak çalışmak üzere tasarlanmıştır. Base App içinde açıldığında otomatik olarak wallet bağlantısı yapılır.
 
 
+

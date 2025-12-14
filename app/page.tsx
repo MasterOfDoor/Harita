@@ -29,6 +29,22 @@ export default function Home() {
   // Client-side hydration için
   useEffect(() => {
     setIsMounted(true);
+    
+    // Base Mini App ready callback
+    if (typeof window !== "undefined") {
+      // Base Mini App SDK ready callback
+      if ((window as any).miniKit) {
+        (window as any).miniKit.ready?.();
+      }
+      
+      // Alternative: Coinbase SDK ready callback
+      if ((window as any).coinbaseSDK) {
+        (window as any).coinbaseSDK.ready?.();
+      }
+      
+      // Fallback: Dispatch ready event
+      window.dispatchEvent(new Event("minikit:ready"));
+    }
   }, []);
   const { places, loading: placesLoading, loadPlaces, setPlaces } = useMapPlaces();
   const {

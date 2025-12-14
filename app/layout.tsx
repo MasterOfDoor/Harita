@@ -61,6 +61,29 @@ export default function RootLayout({
         <MiniKitProvider>
           {children}
         </MiniKitProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Base Mini App ready callback
+              (function() {
+                if (typeof window !== 'undefined') {
+                  // Base Mini App SDK ready callback
+                  if (window.miniKit && typeof window.miniKit.ready === 'function') {
+                    window.miniKit.ready();
+                  }
+                  
+                  // Alternative: Coinbase SDK ready callback
+                  if (window.coinbaseSDK && typeof window.coinbaseSDK.ready === 'function') {
+                    window.coinbaseSDK.ready();
+                  }
+                  
+                  // Dispatch ready event
+                  window.dispatchEvent(new Event('minikit:ready'));
+                }
+              })();
+            `,
+          }}
+        />
       </body>
     </html>
   );

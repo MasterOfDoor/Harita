@@ -85,3 +85,4 @@ npx hardhat verify --network base <CONTRACT_ADDRESS>
 ### Contract adresi bulunamıyor
 - `deployed-addresses.json` dosyasını kontrol edin
 - `.env.local` dosyasında `NEXT_PUBLIC_REVIEW_NFT_ADDRESS` tanımlı olmalı
+

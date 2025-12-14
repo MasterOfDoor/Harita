@@ -27,3 +27,4 @@ KURALLAR:
 ]
 
 Sadece JSON döndür, başka bir şey yazma.
+
