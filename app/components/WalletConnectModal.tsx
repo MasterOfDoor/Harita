@@ -40,7 +40,7 @@ export default function WalletConnectModal({
         zIndex: 9999,
         backdropFilter: "blur(4px)",
       }}
-      onClick={onClose}
+      onClick={() => {}} // Wallet bağlanmadan modal kapatılamaz
     >
       <div
         className="modal-content"
