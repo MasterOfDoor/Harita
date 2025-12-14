@@ -10,7 +10,7 @@ Bu rehber, Base Mini App'inizi hızlıca başlatmak için gereken adımları iç
 npm install
 ```
 
-### 2. Environment Variables Ayarlayın
+### 2. Environment Variables Ayarlayın.
 
 `.env.local` dosyası oluşturun:
 
