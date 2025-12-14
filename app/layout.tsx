@@ -11,7 +11,7 @@ const miniapp = {
   name: "Harita",
   version: "1",
   homeUrl: "https://haritam1.vercel.app/",
-  imageUrl: "https://ibb.co/vxCHv4TY",
+  imageUrl: "https://ibb.co/Y4T50ZS8",
 };
 
 export const metadata: Metadata = {
