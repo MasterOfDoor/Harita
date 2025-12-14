@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { base } from "wagmi/chains";
 import { useMapPlaces } from "./hooks/useMapPlaces";
 import { useMapSearch } from "./hooks/useMapSearch";
 import { useMapFilters } from "./hooks/useMapFilters";
@@ -24,6 +25,8 @@ const MapComponent = dynamic(() => import("./components/MapComponent"), {
 
 export default function Home() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const [isMounted, setIsMounted] = useState(false);
 
   // Client-side hydration için
@@ -46,6 +49,24 @@ export default function Home() {
       window.dispatchEvent(new Event("minikit:ready"));
     }
   }, []);
+
+  // Base chain'e geçiş kontrolü ve otomatik switch
+  useEffect(() => {
+    if (!isConnected || !isMounted) return;
+
+    // Base chain ID: 8453 (0x2105)
+    const BASE_CHAIN_ID = base.id; // 8453
+
+    // Eğer Base chain'de değilsek, switch et
+    if (chainId !== BASE_CHAIN_ID) {
+      console.log(`[Chain Switch] Current chain: ${chainId}, switching to Base: ${BASE_CHAIN_ID}`);
+      try {
+        switchChain({ chainId: BASE_CHAIN_ID });
+      } catch (error) {
+        console.error("[Chain Switch] Error switching to Base:", error);
+      }
+    }
+  }, [isConnected, isMounted, chainId, switchChain]);
   const { places, loading: placesLoading, loadPlaces, setPlaces } = useMapPlaces();
   const {
     isSearchOpen,
