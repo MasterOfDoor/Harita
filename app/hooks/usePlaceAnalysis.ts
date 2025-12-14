@@ -63,39 +63,31 @@ export function usePlaceAnalysis() {
       const systemPrompt = await loadSystemPrompt();
       console.log("[analyzePlaces] System prompt yüklendi, uzunluk:", systemPrompt.length);
 
-      // Chunk to avoid token issues
-      const batches = chunkArray(places, 5);
+      // Chunk to avoid token issues - batch size'ı 3'e düşürdük
+      const batches = chunkArray(places, 3);
 
       for (const batch of batches) {
         // Prepare payload for this batch
         const batchPayload = await Promise.all(
           batch.map(async (place) => {
-            // Website content (limited)
+            // Website content (daha kısa limit - 2000 karakter)
             let websiteContent = "";
             if (place.website) {
               try {
                 const content = await fetchContent(place.website);
-                websiteContent = (content || "").slice(0, 4000);
+                websiteContent = (content || "").slice(0, 2000);
               } catch (err) {
                 console.warn("Website fetch failed", place.website, err);
               }
             }
 
-            // Photos (convert first 3 to data URLs)
+            // Photos - data URL yerine sadece URL'leri kullan (context length için)
             const photoCandidates = [
               ...(place.photos || []),
               ...(place.photo ? [place.photo] : []),
             ]
               .filter(Boolean)
-              .slice(0, 3);
-
-            const photoDataUrls: string[] = [];
-            for (const photoUrl of photoCandidates) {
-              const dataUrl = await fetchDataUrl(photoUrl);
-              if (dataUrl) {
-                photoDataUrls.push(dataUrl);
-              }
-            }
+              .slice(0, 2); // Sadece 2 fotoğraf
 
             return {
               id: place.id,
@@ -105,25 +97,26 @@ export function usePlaceAnalysis() {
               websiteContent,
               tags: place.tags || [],
               features: place.features || [],
-              photos: photoDataUrls,
+              photoUrls: photoCandidates, // Data URL yerine sadece URL'ler
             };
           })
         );
 
+        // Sadece gerekli alanları gönder (context length için)
         const userContent = batchPayload.map((p) => ({
           id: p.id,
           name: p.name,
           address: p.address,
-          website: p.website,
-          websiteContent: p.websiteContent,
-          tags: p.tags,
-          features: p.features,
+          website: p.website || "",
+          websiteContent: p.websiteContent.slice(0, 1500), // Daha da kısalt
+          tags: p.tags || [],
+          features: p.features || [],
         }));
 
-        // OpenAI responses API - text input + foto URL listesi
+        // Photo URL'leri sadece referans olarak (data URL değil)
         const photoUrls = batchPayload
-          .flatMap((p) => p.photos)
-          .slice(0, 6);
+          .flatMap((p) => p.photoUrls)
+          .slice(0, 4); // Maksimum 4 fotoğraf URL'i
 
         const textInstruction = `
 ${systemPrompt || "Sen bir mekan analiz uzmanısın. Sadece geçerli JSON array döndür."}
@@ -138,9 +131,9 @@ Format (JSON array):
   }
 ]
 
-Mekanlar: ${JSON.stringify(userContent, null, 2)}
+Mekanlar: ${JSON.stringify(userContent)}
 
-Analizleyeceğin fotoğraf URL'leri: ${photoUrls.join(", ")}
+Fotoğraf referansları: ${photoUrls.length > 0 ? photoUrls.join(", ") : "Yok"}
 `;
 
         const body = {

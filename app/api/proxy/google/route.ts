@@ -203,7 +203,20 @@ export async function GET(request: NextRequest) {
       }
 
       // Place Details (New) - GET request
-      const normalizedId = placeId.startsWith("places/") ? placeId : `places/${placeId}`;
+      // Place ID formatını düzelt: Eğer zaten "places/" ile başlıyorsa olduğu gibi kullan
+      // Eğer "ChIJ" ile başlıyorsa (eski format) "places/" ekle
+      // Eğer başka bir format ise kontrol et
+      let normalizedId = placeId;
+      if (!normalizedId.startsWith("places/")) {
+        // Eğer "ChIJ" ile başlıyorsa (eski Google Places ID formatı)
+        if (normalizedId.startsWith("ChIJ")) {
+          normalizedId = `places/${normalizedId}`;
+        } else {
+          // Diğer durumlarda da "places/" ekle
+          normalizedId = `places/${normalizedId}`;
+        }
+      }
+      
       const fieldMask = "id,displayName,formattedAddress,formattedPhoneNumber,websiteUri,regularOpeningHours,photos,location,types,rating,userRatingCount,reviews";
       const url = `https://places.googleapis.com/v1/${normalizedId}`;
       
