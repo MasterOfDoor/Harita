@@ -9,7 +9,7 @@
     "splashBackgroundColor": "#d4a657",
     "primaryCategory": "social",
     "tags": ["harita", "maps", "places", "location", "base"]
-  {
+  },
   "accountAssociation": {
     "header": "eyJmaWQiOi0xLCJ0eXBlIjoiYXV0aCIsImtleSI6IjB4ZWQ2NjVmQTU2MTVENGJGRmZGYTM4NDgxYjY3OThFYkQwNmQyMzQxOCJ9",
     "payload": "eyJkb21haW4iOiJoYXJpdGFtMS52ZXJjZWwuYXBwIn0",
