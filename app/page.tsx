@@ -15,6 +15,7 @@ import ResultsPanel from "./components/ResultsPanel";
 import DetailPanel from "./components/DetailPanel";
 import FilterPanel, { FilterState } from "./components/FilterPanel";
 import ProfilePanel from "./components/ProfilePanel";
+import WalletConnectModal from "./components/WalletConnectModal";
 
 // Leaflet haritasını dinamik olarak yükle (SSR sorunlarını önlemek için)
 const MapComponent = dynamic(() => import("./components/MapComponent"), {
@@ -246,10 +247,23 @@ export default function Home() {
     resetFilters();
   }, [resetFilters]);
 
+  // Wallet bağlı değilse uygulamayı gösterme, wallet connect modal göster
+  if (!isMounted) {
+    return null; // SSR için
+  }
+
+  if (!isConnected) {
+    return (
+      <main className="relative w-full h-screen overflow-hidden">
+        <WalletConnectModal isOpen={true} onClose={() => {}} />
+      </main>
+    );
+  }
+
   return (
     <main className="relative w-full h-screen overflow-hidden">
-      {/* MiniKit Smart Wallet otomatik olarak bağlanır, login butonu gerekmez */}
-      {isMounted && isConnected && address && (
+      {/* Wallet bağlı - uygulama gösteriliyor */}
+      {address && (
         <div className="fixed top-4 right-4 z-50 bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm">
           Wallet: {address.slice(0, 6)}...{address.slice(-4)}
         </div>

@@ -17,9 +17,9 @@ export default function WalletConnectModal({
 
   if (!isOpen) return null;
 
-  // Wallet bağlandıysa modal'ı kapat
+  // Wallet bağlandıysa modal'ı kapat (onClose çağrılabilir)
   if (isConnected) {
-    onClose();
+    // Modal'ı kapat ama onClose boş fonksiyon olabilir
     return null;
   }
 
@@ -107,7 +107,7 @@ export default function WalletConnectModal({
 
         <div style={{ marginTop: "24px", textAlign: "center" }}>
           <p style={{ color: "#7a6c49", fontSize: "12px" }}>
-            Base Mini App içinde otomatik olarak bağlanır
+            Uygulamayı kullanmak için cüzdanınızı bağlamanız gerekiyor
           </p>
         </div>
       </div>
