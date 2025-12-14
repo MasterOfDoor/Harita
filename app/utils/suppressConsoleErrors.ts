@@ -40,6 +40,7 @@ if (typeof window !== "undefined") {
     }).join(' ');
     
     // Metamask ile ilgili herhangi bir log'u filtrele
+    // [log] [message] formatını da kontrol et
     if (
       message.toLowerCase().includes("metamask") ||
       message.includes("metamask-provider") ||
@@ -48,7 +49,10 @@ if (typeof window !== "undefined") {
       message.includes("chainChanged") ||
       (message.includes("target") && message.includes("metamask")) ||
       (message.includes('"target":"metamask-inpage"')) ||
-      (message.includes('"name":"metamask-provider"'))
+      (message.includes('"name":"metamask-provider"')) ||
+      (message.includes('[log]') && message.includes('metamask')) ||
+      (message.includes('[message]') && message.includes('metamask')) ||
+      (message.includes('networkVersion') && message.includes('metamask'))
     ) {
       return; // Metamask loglarını gösterme
     }
