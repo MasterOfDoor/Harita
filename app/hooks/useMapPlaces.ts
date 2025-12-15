@@ -224,7 +224,37 @@ export function useMapPlaces() {
             uniquePlacesMap.set(place.id, place);
           }
         });
-        const uniquePlaces = Array.from(uniquePlacesMap.values());
+        let uniquePlaces = Array.from(uniquePlacesMap.values());
+
+        // Mesafeye göre sırala (yakın olanlar önce gelsin)
+        if (options.lat && options.lng) {
+          const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+            const R = 6371; // Dünya yarıçapı (km)
+            const dLat = ((lat2 - lat1) * Math.PI) / 180;
+            const dLng = ((lng2 - lng1) * Math.PI) / 180;
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((lat1 * Math.PI) / 180) *
+                Math.cos((lat2 * Math.PI) / 180) *
+                Math.sin(dLng / 2) *
+                Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // Mesafe (km)
+          };
+
+          uniquePlaces = uniquePlaces.sort((a, b) => {
+            const distA = calculateDistance(options.lat!, options.lng!, a.coords[0], a.coords[1]);
+            const distB = calculateDistance(options.lat!, options.lng!, b.coords[0], b.coords[1]);
+            return distA - distB; // Yakın olanlar önce
+          });
+
+          console.log(`[useMapPlaces] Sonuçlar mesafeye göre sıralandı. İlk 5 mekan mesafeleri:`, 
+            uniquePlaces.slice(0, 5).map(p => ({
+              name: p.name,
+              distance: calculateDistance(options.lat!, options.lng!, p.coords[0], p.coords[1]).toFixed(2) + " km"
+            }))
+          );
+        }
 
         // Fetch detailed info (website, photos, etc.) for top results to enrich data
         const detailedPlaces = await Promise.allSettled(

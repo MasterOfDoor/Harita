@@ -174,7 +174,7 @@ function convertAIToLabels(aiOutput: AIAnalysisOutput, placeId: string): Analysi
 }
 
 export function usePlaceAnalysis() {
-  const { aiChat } = useProxy();
+  const { aiChat, googlePhoto } = useProxy();
   const systemPromptCache = useRef<string | null>(null);
   const systemPromptPromise = useRef<Promise<string> | null>(null);
 
@@ -204,26 +204,66 @@ export function usePlaceAnalysis() {
       // Her mekan için ayrı ayrı analiz yap (test.js formatına göre)
       for (const place of places) {
         try {
-          // Google Places API'den gelen fotoğrafları al
-          const photoUrls = [
-            ...(place.photos || []),
-            ...(place.photo ? [place.photo] : []),
-          ]
-            .filter(Boolean)
-            .slice(0, 6); // Maksimum 6 fotoğraf (test.js formatına göre)
+          // Google Places API'den gelen fotoğrafları al ve URL formatına çevir
+          const photoUrls: string[] = [];
+          
+          // place.photos array'inden fotoğrafları al
+          if (place.photos && Array.isArray(place.photos)) {
+            for (const photo of place.photos.slice(0, 6)) {
+              if (typeof photo === "string") {
+                // Eğer zaten URL ise direkt kullan
+                if (photo.startsWith("http://") || photo.startsWith("https://") || photo.startsWith("/api/proxy")) {
+                  photoUrls.push(photo);
+                } else {
+                  // Eğer photo_reference ise URL'e çevir
+                  photoUrls.push(googlePhoto(photo, "800"));
+                }
+              }
+            }
+          }
+          
+          // place.photo'dan tek fotoğraf al
+          if (place.photo) {
+            if (typeof place.photo === "string") {
+              if (place.photo.startsWith("http://") || place.photo.startsWith("https://") || place.photo.startsWith("/api/proxy")) {
+                photoUrls.push(place.photo);
+              } else {
+                // Eğer photo_reference ise URL'e çevir
+                photoUrls.push(googlePhoto(place.photo, "800"));
+              }
+            }
+          }
 
-          if (photoUrls.length === 0) {
+          // Duplicate URL'leri kaldır ve limit uygula
+          const uniquePhotoUrls = Array.from(new Set(photoUrls)).slice(0, 6);
+
+          if (uniquePhotoUrls.length === 0) {
             console.warn(`[analyzePlaces] ${place.name} için fotoğraf yok, atlanıyor`);
             continue;
           }
 
-          console.log(`[analyzePlaces] ${place.name} analiz ediliyor, ${photoUrls.length} fotoğraf`);
+          console.log(`[analyzePlaces] ${place.name} analiz ediliyor, ${uniquePhotoUrls.length} fotoğraf`);
 
-          // test.js formatına göre input hazırla
-          const imageInputs = photoUrls.map((url) => ({
-            type: "input_image",
-            image_url: url, // Google Places API'den gelen URL direkt kullanılır
-          }));
+          // test.js formatına göre input hazırla - sadece geçerli URL'leri kullan
+          const imageInputs = uniquePhotoUrls
+            .filter((url) => {
+              // URL formatını kontrol et
+              const isValid = url && (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/api/proxy"));
+              if (!isValid) {
+                console.warn(`[analyzePlaces] Geçersiz fotoğraf URL atlanıyor: ${url}`);
+              }
+              return isValid;
+            })
+            .map((url) => ({
+              type: "input_image",
+              image_url: url,
+            }));
+
+          // Eğer geçerli fotoğraf yoksa atla
+          if (imageInputs.length === 0) {
+            console.warn(`[analyzePlaces] ${place.name} için geçerli fotoğraf URL'i yok, atlanıyor`);
+            continue;
+          }
 
           // System prompt + few-shot + user request
           const input = [
@@ -292,7 +332,7 @@ export function usePlaceAnalysis() {
 
       return resultMap;
     },
-    [aiChat, loadSystemPrompt]
+    [aiChat, googlePhoto, loadSystemPrompt]
   );
 
   return { analyzePlaces };
