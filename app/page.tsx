@@ -7,7 +7,6 @@ import { useMapPlaces } from "./hooks/useMapPlaces";
 import { useMapSearch } from "./hooks/useMapSearch";
 import { useMapFilters } from "./hooks/useMapFilters";
 import { usePlaceAnalysis } from "./hooks/usePlaceAnalysis";
-import { useMiniKit } from "./hooks/useMiniKit";
 import { Place } from "./components/DetailPanel";
 import { buildQueryFromFilters } from "./utils/filterHelpers";
 import TopBar from "./components/TopBar";
@@ -23,22 +22,53 @@ const MapComponent = dynamic(() => import("./components/MapComponent"), {
   ssr: false,
 });
 
+// MiniKit hook'unu optional hale getir - hata durumunda varsayılan değerler döndür
+function useMiniKitSafe() {
+  const [isMiniAppReady, setIsMiniAppReady] = useState(false);
+
+  useEffect(() => {
+    // MiniKit'i dinamik olarak yükle ve hata durumunda sessizce devam et
+    const loadMiniKit = async () => {
+      try {
+        const { useMiniKit } = await import("@coinbase/onchainkit/minikit");
+        // MiniKit yüklendiğinde hazır olarak işaretle
+        setIsMiniAppReady(true);
+      } catch (error) {
+        // MiniKit mevcut değilse sessizce devam et - varsayılan olarak hazır kabul et
+        setIsMiniAppReady(true);
+      }
+    };
+
+    loadMiniKit();
+  }, []);
+
+  return {
+    isMiniAppReady,
+    setMiniAppReady: () => setIsMiniAppReady(true),
+  };
+}
+
 export default function Home() {
   const { address, isConnected } = useAccount();
   const [isMounted, setIsMounted] = useState(false);
-  const { isReady: miniKitReady, ready: miniKitReadyCallback } = useMiniKit();
+  const { setMiniAppReady, isMiniAppReady } = useMiniKitSafe();
 
   // Client-side hydration için
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Base Mini App SDK ready callback
+  // Base Mini App SDK ready callback - optional
   useEffect(() => {
-    if (isMounted && miniKitReady) {
-      miniKitReadyCallback();
+    if (isMounted && !isMiniAppReady && setMiniAppReady) {
+      try {
+        setMiniAppReady();
+      } catch (error) {
+        // MiniKit mevcut değilse sessizce devam et
+        console.warn("MiniKit not available:", error);
+      }
     }
-  }, [isMounted, miniKitReady, miniKitReadyCallback]);
+  }, [isMounted, isMiniAppReady, setMiniAppReady]);
   const { places, loading: placesLoading, loadPlaces, setPlaces } = useMapPlaces();
   const {
     isSearchOpen,

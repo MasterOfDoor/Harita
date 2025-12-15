@@ -1,4 +1,4 @@
-const ROOT_URL = "https://harita-six.vercel.app"
+const ROOT_URL = "https://haritam1.vercel.app/"
 /**
  * MiniApp configuration object. Must follow the mini app manifest specification.
  *

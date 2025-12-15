@@ -2,6 +2,3 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mevcut style.css içeriğini buraya ekleyebiliriz veya import edebiliriz */
-@import url('../style.css');
-
