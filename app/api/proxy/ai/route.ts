@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Environment-based API key loading
 const GPT5_API_KEY = process.env.GPT5_API_KEY || process.env.OPENAI_API_KEY || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
-// CORS headers
+// Environment detection
+const isDevelopment = process.env.NODE_ENV === "development";
+const isProduction = process.env.NODE_ENV === "production";
+
+// CORS headers - environment-aware
 function setCorsHeaders(response: NextResponse) {
-  response.headers.set("Access-Control-Allow-Origin", "*");
+  // Local development için daha esnek CORS
+  if (isDevelopment) {
+    response.headers.set("Access-Control-Allow-Origin", "*");
+  } else {
+    // Production'da sadece kendi domain'den gelen isteklere izin ver
+    const origin = process.env.NEXT_PUBLIC_APP_URL || "*";
+    response.headers.set("Access-Control-Allow-Origin", origin);
+  }
   response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
   response.headers.set("Access-Control-Allow-Headers", "Content-Type");
   return response;
@@ -80,8 +92,24 @@ export async function POST(request: NextRequest) {
 
     if (provider === "openai" || provider === "gpt" || provider === "responses") {
       if (!GPT5_API_KEY) {
+        const errorMessage = isDevelopment
+          ? "GPT5_API_KEY or OPENAI_API_KEY environment variable is missing. Check .env.local file."
+          : "OpenAI API key is not configured.";
+        
+        console.error(`[AI API] ${errorMessage}`, {
+          environment: process.env.NODE_ENV,
+          provider,
+          hasKey: !!GPT5_API_KEY,
+        });
+        
         return setCorsHeaders(
-          NextResponse.json({ error: "missing_gpt_key" }, { status: 500 })
+          NextResponse.json(
+            { 
+              error: "missing_gpt_key",
+              message: isDevelopment ? errorMessage : "API key not configured"
+            },
+            { status: 500 }
+          )
         );
       }
 
@@ -113,9 +141,22 @@ export async function POST(request: NextRequest) {
       return setCorsHeaders(NextResponse.json(data, { status: response.status }));
     } else if (provider === "gemini") {
       if (!GEMINI_API_KEY) {
+        const errorMessage = isDevelopment
+          ? "GEMINI_API_KEY environment variable is missing. Check .env.local file."
+          : "Gemini API key is not configured.";
+        
+        console.error(`[AI API] ${errorMessage}`, {
+          environment: process.env.NODE_ENV,
+          provider,
+          hasKey: !!GEMINI_API_KEY,
+        });
+        
         return setCorsHeaders(
           NextResponse.json(
-            { error: "missing_gemini_key" },
+            { 
+              error: "missing_gemini_key",
+              message: isDevelopment ? errorMessage : "API key not configured"
+            },
             { status: 500 }
           )
         );

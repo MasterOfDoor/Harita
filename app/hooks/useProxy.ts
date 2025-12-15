@@ -3,9 +3,30 @@
 /**
  * Proxy API hook'u - Google Maps ve AI API'leri için
  * API key'ler server-side'da saklanır, client-side'da görünmez
+ * 
+ * Environment-based configuration:
+ * - Local development: /api/proxy (relative path, otomatik port algılama)
+ *   - Port 3000: http://localhost:3000/api/proxy
+ *   - Port 3001: http://localhost:3001/api/proxy (port 3000 doluysa)
+ * - Production: /api/proxy (relative path, production domain)
+ * 
+ * ÖNEMLİ: Relative path kullanıldığı için port değişikliği otomatik algılanır.
+ * Local test production'ı etkilemez.
  */
 export function useProxy() {
-  const PROXY_BASE = "/api/proxy";
+  // Environment-based base URL
+  // Relative path kullan - otomatik olarak mevcut domain ve port'u kullanır
+  // Local'de ve production'da aynı şekilde çalışır
+  // Port değişikliği (3000 → 3001) otomatik algılanır
+  const getProxyBase = () => {
+    // Her zaman relative path kullan
+    // Browser otomatik olarak mevcut domain ve port'u kullanır
+    // Örnek: localhost:3001'de çalışıyorsa → localhost:3001/api/proxy
+    // Örnek: production'da → production-domain/api/proxy
+    return "/api/proxy";
+  };
+
+  const PROXY_BASE = getProxyBase();
 
   const googleTextSearch = async (params: {
     q: string;

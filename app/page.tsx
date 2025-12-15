@@ -208,6 +208,18 @@ export default function Home() {
     setSelectedPlace(place);
     setIsDetailOpen(true);
     setIsResultsOpen(false);
+    
+    // Haritada o yere zoom yap (MapComponent'teki useEffect tetiklenecek)
+    // Ayrıca window üzerinden direkt erişim de sağlayalım
+    if (typeof window !== "undefined" && (window as any).mapInstance) {
+      const map = (window as any).mapInstance;
+      if (map && place.coords) {
+        map.setView([place.coords[0], place.coords[1]], 16, {
+          animate: true,
+          duration: 0.5,
+        });
+      }
+    }
   }, []);
 
   const handleSearch = useCallback(
@@ -221,35 +233,42 @@ export default function Home() {
       resetFilters();
       
       if (results.length > 0) {
+        // Önce sonuçları set et, sonra panel'i aç (timing sorununu önlemek için)
+        setPlaces(results);
         setIsResultsOpen(true);
         
-        // AI analizi yap
+        // AI analizi yap (async, arka planda)
         console.log("[handleSearch] AI analizi başlatılıyor...");
-        try {
-          const analysisResults = await analyzePlaces(results);
-          console.log("[handleSearch] AI analizi tamamlandı, sonuç:", analysisResults.size);
-          
-          // Sonuçları zenginleştir
-          const enrichedResults = results.map((place) => {
-            const analysis = analysisResults.get(place.id);
-            if (analysis) {
-              console.log("[handleSearch] Zenginleştirildi:", place.name, "Labels:", analysis.labels);
-              return {
-                ...place,
-                tags: [...(place.tags || []), ...analysis.tags],
-                features: [...(place.features || []), ...analysis.features],
-                labels: analysis.labels,
-              };
-            }
-            return place;
+        analyzePlaces(results)
+          .then((analysisResults) => {
+            console.log("[handleSearch] AI analizi tamamlandı, sonuç:", analysisResults.size);
+            
+            // Sonuçları zenginleştir
+            const enrichedResults = results.map((place) => {
+              const analysis = analysisResults.get(place.id);
+              if (analysis) {
+                console.log("[handleSearch] Zenginleştirildi:", place.name, "Labels:", analysis.labels);
+                return {
+                  ...place,
+                  tags: [...(place.tags || []), ...analysis.tags],
+                  features: [...(place.features || []), ...analysis.features],
+                  labels: analysis.labels,
+                };
+              }
+              return place;
+            });
+            
+            // Zenginleştirilmiş sonuçları güncelle
+            setPlaces(enrichedResults);
+          })
+          .catch((error) => {
+            console.error("[handleSearch] AI analizi hatası:", error);
+            // Hata durumunda orijinal sonuçlar zaten gösteriliyor
           });
-          
-          setPlaces(enrichedResults);
-        } catch (error) {
-          console.error("[handleSearch] AI analizi hatası:", error);
-          // Hata durumunda orijinal sonuçları göster
-          setPlaces(results);
-        }
+      } else {
+        // Sonuç yoksa panel'i kapat
+        setIsResultsOpen(false);
+        setPlaces([]);
       }
     },
     [performSearch, resetFilters, analyzePlaces, setPlaces]

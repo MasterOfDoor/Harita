@@ -55,6 +55,11 @@ function MapComponent({
     }).addTo(map);
 
     mapInstanceRef.current = map;
+    
+    // Map instance'ını window'a expose et (ResultsPanel'den erişim için)
+    if (typeof window !== "undefined") {
+      (window as any).mapInstance = map;
+    }
 
     // Get user location - map hazır olduktan sonra
     if (navigator.geolocation) {
@@ -80,6 +85,10 @@ function MapComponent({
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+      }
+      // Window'dan da temizle
+      if (typeof window !== "undefined") {
+        delete (window as any).mapInstance;
       }
     };
   }, []);
@@ -123,35 +132,65 @@ function MapComponent({
 
       marker.on("click", () => {
         onPlaceClick(place);
-        // Zoom yapma - sadece detay paneli açılsın
-        // if (mapInstanceRef.current) {
-        //   mapInstanceRef.current.setView([place.coords[0], place.coords[1]], 16);
-        // }
+        // Google Maps gibi zoom yap
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setView([place.coords[0], place.coords[1]], 16, {
+            animate: true,
+            duration: 0.5,
+          });
+          // Marker'ı highlight et
+          marker.openPopup();
+        }
       });
 
       markersRef.current.push(marker);
     });
 
-    // Fit bounds sadece ilk yüklemede (places değiştiğinde değil, sadece yeni sonuçlar geldiğinde)
-    // Marker'a tıklayınca zoom seviyesini değiştirmemek için fitBounds'u kaldırdık
-    // Kullanıcı zoom yaptıysa, o zoom seviyesinde kalmalı
-    // if (places.length > 0 && mapInstanceRef.current) {
-    //   const bounds = L.latLngBounds(
-    //     places.map((p) => [p.coords[0], p.coords[1]] as [number, number])
-    //   );
-    //   mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
-    // }
+    // Google Maps gibi: Yeni sonuçlar geldiğinde tüm marker'ları göster (fitBounds)
+    // Ama sadece birden fazla marker varsa ve kullanıcı zoom yapmamışsa
+    if (places.length > 0 && mapInstanceRef.current && places.length > 1) {
+      const bounds = L.latLngBounds(
+        places.map((p) => [p.coords[0], p.coords[1]] as [number, number])
+      );
+      // Sadece tek bir marker varsa zoom yapma, birden fazla varsa fitBounds yap
+      mapInstanceRef.current.fitBounds(bounds, { 
+        padding: [100, 100],
+        maxZoom: 15, // Maksimum zoom seviyesi (çok yakınlaşmasın)
+      });
+    } else if (places.length === 1 && mapInstanceRef.current) {
+      // Tek sonuç varsa o yere zoom yap
+      const place = places[0];
+      mapInstanceRef.current.setView([place.coords[0], place.coords[1]], 15, {
+        animate: true,
+        duration: 0.5,
+      });
+    }
   }, [places, onPlaceClick]);
 
-  // Focus on selected place - zoom yapma, sadece marker'ı highlight et
-  // useEffect(() => {
-  //   if (selectedPlace && mapInstanceRef.current) {
-  //     mapInstanceRef.current.setView(
-  //       [selectedPlace.coords[0], selectedPlace.coords[1]],
-  //       16
-  //     );
-  //   }
-  // }, [selectedPlace]);
+  // Focus on selected place - Google Maps gibi zoom yap ve marker'ı highlight et
+  useEffect(() => {
+    if (selectedPlace && mapInstanceRef.current) {
+      const [lat, lng] = selectedPlace.coords;
+      mapInstanceRef.current.setView([lat, lng], 16, {
+        animate: true,
+        duration: 0.5,
+      });
+      
+      // İlgili marker'ı bul ve popup'ını aç
+      const relatedMarker = markersRef.current.find((marker) => {
+        const markerLat = (marker.getLatLng() as any).lat;
+        const markerLng = (marker.getLatLng() as any).lng;
+        return (
+          Math.abs(markerLat - lat) < 0.0001 &&
+          Math.abs(markerLng - lng) < 0.0001
+        );
+      });
+      
+      if (relatedMarker) {
+        relatedMarker.openPopup();
+      }
+    }
+  }, [selectedPlace]);
 
   // User location marker'ı güncelle
   useEffect(() => {
