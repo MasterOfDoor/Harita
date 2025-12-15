@@ -37,13 +37,16 @@ async function textSearchNew(q: string, lat: string, lng: string, radius: string
 
   const requestBody: any = {
     textQuery: q,
+    // Text Search'te locationBias kullanılmalı (locationRestriction desteklenmiyor)
+    // locationBias: yakın sonuçlara öncelik verir ama sınırlama yapmaz
+    // Daha sıkı sonuçlar için radius'u küçült ve locationBias kullan
     locationBias: {
       circle: {
         center: {
           latitude: parseFloat(lat),
           longitude: parseFloat(lng),
         },
-        radius: parseFloat(radius),
+        radius: parseFloat(radius), // Metre cinsinden
       },
     },
     pageSize: 20,
@@ -83,7 +86,7 @@ async function textSearchNew(q: string, lat: string, lng: string, radius: string
         error: errorData,
         errorText: errorText.substring(0, 500), // İlk 500 karakter
         apiKeyPrefix: GOOGLE_PLACES_KEY?.slice(0, 10) || "none",
-        requestBody: { textQuery: q, locationBias: requestBody.locationBias },
+        requestBody: { textQuery: q, locationBias: requestBody.locationBias, center: { lat, lng }, radius },
       });
       
       // Google API hatalarını daha anlaşılır hale getir

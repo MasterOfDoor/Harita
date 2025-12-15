@@ -254,18 +254,26 @@ function MapComponent({
 
     // Map center'ı almak için function
     const getMapCenter = () => {
-      if (!mapInstanceRef.current) return { lat: 41.015137, lng: 28.97953 };
+      if (!mapInstanceRef.current) {
+        console.warn("[MapComponent] getMapCenter: Harita instance yok, varsayılan İstanbul kullanılıyor");
+        return { lat: 41.015137, lng: 28.97953 };
+      }
       const center = mapInstanceRef.current.getCenter();
+      console.log("[MapComponent] getMapCenter:", center);
       return { lat: center.lat, lng: center.lng };
     };
 
     // Kullanıcı konumunu almak için function
     const getUserLocation = () => {
+      // Öncelik: kullanıcı konumu (GPS'ten alınan)
       if (userLocation) {
+        console.log("[MapComponent] getUserLocation: Kullanıcı konumu kullanılıyor", userLocation);
         return { lat: userLocation[0], lng: userLocation[1] };
       }
-      // Kullanıcı konumu yoksa harita merkezini kullan
-      return getMapCenter();
+      // Fallback: harita merkezi
+      const center = getMapCenter();
+      console.log("[MapComponent] getUserLocation: Harita merkezi kullanılıyor (kullanıcı konumu yok)", center);
+      return center;
     };
     
     // Store handlers globally
@@ -277,6 +285,7 @@ function MapComponent({
       delete (window as any).handleMapLocation;
       delete (window as any).getMapCenter;
       delete (window as any).getUserLocation;
+      delete (window as any).getMapCenter;
       if (userLocationMarkerRef.current) {
         userLocationMarkerRef.current.remove();
       }

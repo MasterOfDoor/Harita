@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useProxy } from "../hooks/useProxy";
 import { useReviews, BlockchainReview } from "../hooks/useReviews";
@@ -94,17 +94,32 @@ export default function DetailPanel({ isOpen, place, onClose }: DetailPanelProps
     }
   }, [googlePlaceDetails, googlePhoto]);
 
+  // Place değiştiğinde formu sıfırla (ama sadece place değiştiğinde, isOpen değiştiğinde değil)
+  const prevPlaceIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (place && isOpen) {
-      setPlaceDetails(place);
-      setCurrentPhotoIndex(0); // Her yeni mekan açıldığında ilk fotoğrafa dön
-      setReviewComment(""); // Formu temizle
-      setReviewRating(5);
-      setShowReviewForm(false);
+      // Sadece place ID değiştiğinde formu sıfırla
+      if (prevPlaceIdRef.current !== place.id) {
+        setPlaceDetails(place);
+        setCurrentPhotoIndex(0); // Her yeni mekan açıldığında ilk fotoğrafa dön
+        setReviewComment(""); // Formu temizle
+        setReviewRating(5);
+        setShowReviewForm(false);
+        prevPlaceIdRef.current = place.id;
+      } else {
+        // Place aynıysa sadece placeDetails'i güncelle
+        setPlaceDetails(place);
+      }
+      
       // Fetch detailed information if not already loaded
       if (!place.address && !place.hours) {
         loadPlaceDetails(place.id);
       }
+    } else if (!isOpen) {
+      // Panel kapandığında formu sıfırla
+      setShowReviewForm(false);
+      prevPlaceIdRef.current = null;
     }
   }, [place, isOpen, loadPlaceDetails]);
 
@@ -723,11 +738,14 @@ export default function DetailPanel({ isOpen, place, onClose }: DetailPanelProps
         {!showReviewForm && (
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               if (!isConnected) {
                 alert("Yorum yapmak için önce wallet bağlantısı yapmanız gerekiyor.");
                 return;
               }
+              console.log("[DetailPanel] Yorum formu açılıyor");
               setShowReviewForm(true);
             }}
             className="pill primary"
