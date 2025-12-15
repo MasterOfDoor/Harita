@@ -11,32 +11,170 @@ interface AnalysisResult {
   tags: string[];
 }
 
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
+// AI analizi çıktı formatı (test.js formatına göre)
+interface AIAnalysisOutput {
+  mekan_isiklandirma?: "los" | "canli" | "dogal";
+  ambiyans?: { retro?: boolean; modern?: boolean };
+  masada_priz_var_mi?: boolean;
+  koltuk_var_mi?: boolean;
+  sigara_iciliyor?: boolean;
+  sigara_alani?: ("acik" | "kapali")[];
+  deniz_manzarasi?: boolean;
 }
 
-async function fetchDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("photo fetch failed");
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
+// Few-shot örnekleri (fewshot.js'den)
+const FEW_SHOT_MESSAGES = [
+  {
+    role: "user",
+    content: [
+      { type: "input_image", image_url: "https://ibb.co/gZR4GN9B" },
+      { type: "input_image", image_url: "https://ibb.co/vxyjtkn4" },
+      { type: "input_image", image_url: "https://ibb.co/FL616hP1" },
+      { type: "input_image", image_url: "https://ibb.co/ZnjvVt4" },
+      { type: "input_image", image_url: "https://ibb.co/3yJz6HcY" },
+      { type: "input_image", image_url: "https://ibb.co/350kb2n1" },
+      { type: "input_text", text: "Bu fotoğraf bir ÖĞRETİM örneğidir. Kurallara göre analiz et." }
+    ]
+  },
+  {
+    role: "assistant",
+    content: [
+      {
+        type: "output_text",
+        text: `{
+  "mekan_isiklandirma": "los",
+  "ambiyans": { "retro": true, "modern": false },
+  "sigara_iciliyor": true,
+  "sigara_alani": ["kapali"],
+  "deniz_manzarasi": false
+}`
+      }
+    ]
+  },
+  {
+    role: "user",
+    content: [
+      { type: "input_image", image_url: "https://ibb.co/s9nMvFMx" },
+      { type: "input_image", image_url: "https://ibb.co/ZpWGcP6g" },
+      { type: "input_image", image_url: "https://ibb.co/bg1SM1C7" },
+      { type: "input_image", image_url: "https://ibb.co/ksyMcsf4" },
+      { type: "input_image", image_url: "https://ibb.co/wFVDcQGQ" },
+      { type: "input_image", image_url: "https://ibb.co/4ZhbzpLf" },
+      { type: "input_image", image_url: "https://ibb.co/0ySFQWbQ" },
+      { type: "input_text", text: "Bu fotoğraf bir ÖĞRETİM örneğidir. Kurallara göre analiz et." }
+    ]
+  },
+  {
+    role: "assistant",
+    content: [
+      {
+        type: "output_text",
+        text: `{
+  "mekan_isiklandirma": "canli",
+  "ambiyans": { "retro": false, "modern": true },
+  "masada_priz_var_mi": true,
+  "sigara_iciliyor": true,
+  "sigara_alani": ["acik"],
+  "deniz_manzarasi": false
+}`
+      }
+    ]
+  },
+  {
+    role: "user",
+    content: [
+      { type: "input_image", image_url: "https://ibb.co/45Nr9kN" },
+      { type: "input_image", image_url: "https://ibb.co/8VTJvf7" },
+      { type: "input_image", image_url: "https://ibb.co/gbHvLW6x" },
+      { type: "input_image", image_url: "https://ibb.co/HjpRZQ8" },
+      { type: "input_image", image_url: "https://ibb.co/gb5wSXF2" },
+      { type: "input_image", image_url: "https://ibb.co/2YpzMGBP" },
+      { type: "input_text", text: "Bu fotoğraf bir ÖĞRETİM örneğidir. Kurallara göre analiz et." }
+    ]
+  },
+  {
+    role: "assistant",
+    content: [
+      {
+        type: "output_text",
+        text: `{
+  "mekan_isiklandirma": "dogal",
+  "ambiyans": { "retro": true, "modern": false },
+  "masada_priz_var_mi": true,
+  "koltuk_var_mi": true,
+  "sigara_iciliyor": true,
+  "sigara_alani": ["acik"],
+  "deniz_manzarasi": true
+}`
+      }
+    ]
   }
+];
+
+// AI çıktısını filtrelerle eşleştirme formatına çevir
+function convertAIToLabels(aiOutput: AIAnalysisOutput, placeId: string): AnalysisResult {
+  const labels: string[] = [];
+  const features: string[] = [];
+  const tags: string[] = [];
+
+  // Işıklandırma
+  if (aiOutput.mekan_isiklandirma === "los") {
+    labels.push("Los");
+  } else if (aiOutput.mekan_isiklandirma === "canli") {
+    labels.push("Canli");
+  } else if (aiOutput.mekan_isiklandirma === "dogal") {
+    labels.push("Dogal");
+  }
+
+  // Ambiyans
+  if (aiOutput.ambiyans) {
+    if (aiOutput.ambiyans.retro) {
+      labels.push("Retro");
+    }
+    if (aiOutput.ambiyans.modern) {
+      labels.push("Modern");
+    }
+  }
+
+  // Masada priz
+  if (aiOutput.masada_priz_var_mi) {
+    labels.push("Masada priz");
+  }
+
+  // Koltuk
+  if (aiOutput.koltuk_var_mi) {
+    labels.push("Koltuk var");
+  } else {
+    labels.push("Koltuk yok");
+  }
+
+  // Sigara
+  if (aiOutput.sigara_iciliyor) {
+    labels.push("Sigara icilebilir");
+    if (aiOutput.sigara_alani) {
+      if (aiOutput.sigara_alani.includes("kapali")) {
+        labels.push("Kapali alanda sigara icilebilir");
+      }
+    }
+  }
+
+  // Deniz
+  if (aiOutput.deniz_manzarasi) {
+    labels.push("Deniz goruyor");
+  } else {
+    labels.push("Deniz gormuyor");
+  }
+
+  return {
+    placeId,
+    labels,
+    features,
+    tags,
+  };
 }
 
 export function usePlaceAnalysis() {
-  const { aiChat, fetchContent } = useProxy();
+  const { aiChat } = useProxy();
   const systemPromptCache = useRef<string | null>(null);
   const systemPromptPromise = useRef<Promise<string> | null>(null);
 
@@ -63,127 +201,98 @@ export function usePlaceAnalysis() {
       const systemPrompt = await loadSystemPrompt();
       console.log("[analyzePlaces] System prompt yüklendi, uzunluk:", systemPrompt.length);
 
-      // Chunk to avoid token issues - batch size'ı 3'e düşürdük
-      const batches = chunkArray(places, 3);
-
-      for (const batch of batches) {
-        // Prepare payload for this batch
-        const batchPayload = await Promise.all(
-          batch.map(async (place) => {
-            // Website content (daha kısa limit - 2000 karakter)
-            let websiteContent = "";
-            if (place.website) {
-              try {
-                const content = await fetchContent(place.website);
-                websiteContent = (content || "").slice(0, 2000);
-              } catch (err) {
-                console.warn("Website fetch failed", place.website, err);
-              }
-            }
-
-            // Photos - data URL yerine sadece URL'leri kullan (context length için)
-            const photoCandidates = [
-              ...(place.photos || []),
-              ...(place.photo ? [place.photo] : []),
-            ]
-              .filter(Boolean)
-              .slice(0, 2); // Sadece 2 fotoğraf
-
-            return {
-              id: place.id,
-              name: place.name,
-              address: place.address || "",
-              website: place.website || "",
-              websiteContent,
-              tags: place.tags || [],
-              features: place.features || [],
-              photoUrls: photoCandidates, // Data URL yerine sadece URL'ler
-            };
-          })
-        );
-
-        // Sadece gerekli alanları gönder (context length için)
-        const userContent = batchPayload.map((p) => ({
-          id: p.id,
-          name: p.name,
-          address: p.address,
-          website: p.website || "",
-          websiteContent: p.websiteContent.slice(0, 1500), // Daha da kısalt
-          tags: p.tags || [],
-          features: p.features || [],
-        }));
-
-        // Photo URL'leri sadece referans olarak (data URL değil)
-        const photoUrls = batchPayload
-          .flatMap((p) => p.photoUrls)
-          .slice(0, 4); // Maksimum 4 fotoğraf URL'i
-
-        const textInstruction = `
-${systemPrompt || "Sen bir mekan analiz uzmanısın. Sadece geçerli JSON array döndür."}
-
-Format (JSON array):
-[
-  {
-    "placeId": "id",
-    "labels": ["etiket1", "etiket2"],
-    "features": ["özellik1", "özellik2"],
-    "tags": ["etiket1", "etiket2"]
-  }
-]
-
-Mekanlar: ${JSON.stringify(userContent)}
-
-Fotoğraf referansları: ${photoUrls.length > 0 ? photoUrls.join(", ") : "Yok"}
-`;
-
-        const body = {
-          model: "gpt-5-mini",
-          input: textInstruction,
-          // temperature parametresi responses API'de desteklenmiyor, kaldırıldı
-          max_output_tokens: 500,
-        };
-
-        const requestSize = JSON.stringify(body).length;
-        console.log("[analyzePlaces] AI isteği gönderiliyor (openai responses), boyut:", Math.round(requestSize / 1024), "KB, foto:", photoUrls.length);
-
+      // Her mekan için ayrı ayrı analiz yap (test.js formatına göre)
+      for (const place of places) {
         try {
-          const startTime = Date.now();
-          const response = await aiChat(body, "responses");
-          const duration = Date.now() - startTime;
-          console.log("[analyzePlaces] AI yanıt alındı, süre:", duration, "ms");
+          // Google Places API'den gelen fotoğrafları al
+          const photoUrls = [
+            ...(place.photos || []),
+            ...(place.photo ? [place.photo] : []),
+          ]
+            .filter(Boolean)
+            .slice(0, 6); // Maksimum 6 fotoğraf (test.js formatına göre)
 
-          const content = response.output_text || response.choices?.[0]?.message?.content || "";
-
-          console.log("[analyzePlaces] AI yanıt içeriği:", content.substring(0, 500));
-
-          const jsonMatch = content.match(/\[[\s\S]*\]/);
-          if (!jsonMatch) {
-            console.warn("[analyzePlaces] AI yanıtında JSON array bulunamadı!");
-            console.warn("[analyzePlaces] Tam yanıt:", content);
+          if (photoUrls.length === 0) {
+            console.warn(`[analyzePlaces] ${place.name} için fotoğraf yok, atlanıyor`);
             continue;
           }
 
-          const results: AnalysisResult[] = JSON.parse(jsonMatch[0]);
-          console.log("[analyzePlaces] Parse edilen sonuç sayısı:", results.length);
-          
-          results.forEach((res) => {
-            console.log("[analyzePlaces] Mekan:", res.placeId, "Labels:", res.labels);
-            resultMap.set(res.placeId, {
-              placeId: res.placeId,
-              labels: res.labels || [],
-              features: res.features || [],
-              tags: res.tags || [],
-            });
-          });
+          console.log(`[analyzePlaces] ${place.name} analiz ediliyor, ${photoUrls.length} fotoğraf`);
+
+          // test.js formatına göre input hazırla
+          const imageInputs = photoUrls.map((url) => ({
+            type: "input_image",
+            image_url: url, // Google Places API'den gelen URL direkt kullanılır
+          }));
+
+          // System prompt + few-shot + user request
+          const input = [
+            {
+              role: "system",
+              content: [
+                { type: "input_text", text: systemPrompt || "Sen bir mekan analiz uzmanısın." }
+              ]
+            },
+            ...FEW_SHOT_MESSAGES,
+            {
+              role: "user",
+              content: [
+                ...imageInputs,
+                {
+                  type: "input_text",
+                  text: `Tüm fotoğraflar "${place.name}" mekanına aittir. Kurallara birebir uyarak analiz et.`
+                }
+              ]
+            }
+          ];
+
+          // OpenAI responses API formatına göre body
+          const body = {
+            model: "gpt-4o-2024-11-20",
+            input,
+          };
+
+          const requestSize = JSON.stringify(body).length;
+          console.log(`[analyzePlaces] ${place.name} için AI isteği gönderiliyor, boyut:`, Math.round(requestSize / 1024), "KB, foto:", photoUrls.length);
+
+          const startTime = Date.now();
+          const response = await aiChat(body, "responses");
+          const duration = Date.now() - startTime;
+          console.log(`[analyzePlaces] ${place.name} için AI yanıt alındı, süre:`, duration, "ms");
+
+          // Response'dan JSON çıkar
+          const outputText = response.output_text || response.output?.[0]?.content?.[0]?.text || "";
+          console.log(`[analyzePlaces] ${place.name} AI yanıt:`, outputText.substring(0, 200));
+
+          // JSON parse et
+          let aiOutput: AIAnalysisOutput;
+          try {
+            // JSON nesnesini bul (süslü parantezler arası)
+            const jsonMatch = outputText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+              console.warn(`[analyzePlaces] ${place.name} için JSON bulunamadı!`);
+              continue;
+            }
+            aiOutput = JSON.parse(jsonMatch[0]);
+          } catch (error: any) {
+            console.error(`[analyzePlaces] ${place.name} JSON parse hatası:`, error);
+            continue;
+          }
+
+          // AI çıktısını filtrelerle eşleştirme formatına çevir
+          const result = convertAIToLabels(aiOutput, place.id);
+          console.log(`[analyzePlaces] ${place.name} sonuç:`, result.labels);
+          resultMap.set(place.id, result);
+
         } catch (error: any) {
-          console.error("[analyzePlaces] ❌ AI hatası:", error.message || error);
-          // Continue with next batch
+          console.error(`[analyzePlaces] ${place.name} için AI hatası:`, error.message || error);
+          // Continue with next place
         }
       }
 
       return resultMap;
     },
-    [aiChat, fetchContent, loadSystemPrompt]
+    [aiChat, loadSystemPrompt]
   );
 
   return { analyzePlaces };

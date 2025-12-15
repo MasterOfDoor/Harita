@@ -28,21 +28,33 @@ export async function OPTIONS() {
   return setCorsHeaders(response);
 }
 
-// Input validation - daha esnek
+// Input validation - daha esnek (test.js formatını da destekler)
 function validateAIRequest(body: any, provider: string): { valid: boolean; error?: string } {
   if (!body || typeof body !== "object") {
     return { valid: false, error: "Invalid request body" };
   }
 
-  if (provider === "openai" || provider === "gpt") {
-    // Model kontrolü - opsiyonel, OpenAI varsayılan kullanabilir
-    // if (!body.model || typeof body.model !== "string") {
-    //   return { valid: false, error: "Model is required" };
-    // }
+  if (provider === "responses") {
+    // OpenAI responses API formatı (test.js formatı)
+    // input: array formatında (system + few-shot + user)
+    if (!body.input || !Array.isArray(body.input)) {
+      return { valid: false, error: "Input array is required for responses API" };
+    }
+    // Model kontrolü
+    if (!body.model || typeof body.model !== "string") {
+      return { valid: false, error: "Model is required for responses API" };
+    }
+    // Prompt uzunluğu kontrolü (güvenlik için) - 10MB limit (fotoğraflar için daha fazla)
+    const totalLength = JSON.stringify(body).length;
+    if (totalLength > 10000000) { // ~10MB limit (fotoğraflar için)
+      return { valid: false, error: "Request too large" };
+    }
+  } else if (provider === "openai" || provider === "gpt") {
+    // OpenAI chat completions formatı
     if (!body.messages || !Array.isArray(body.messages)) {
       return { valid: false, error: "Messages array is required" };
     }
-    // Prompt uzunluğu kontrolü (güvenlik için) - 5MB limit (fotoğraflar için)
+    // Prompt uzunluğu kontrolü (güvenlik için) - 5MB limit
     const totalLength = JSON.stringify(body).length;
     if (totalLength > 5000000) { // ~5MB limit
       return { valid: false, error: "Request too large" };

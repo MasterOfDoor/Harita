@@ -270,3 +270,4 @@ Yeni Next.js uygulamasında proxy `/api/proxy` route'ları üzerinden çalışı
 
 
 
+

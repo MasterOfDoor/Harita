@@ -289,18 +289,117 @@ export default function DetailPanel({ isOpen, place, onClose }: DetailPanelProps
 
       {photos.length > 0 && (
         <div id="placePhoto" className="place-photo">
-          <div className="photo-gallery">
+          <div className="photo-gallery" style={{ position: "relative" }}>
             {photos.length > 1 && (
-              <button
-                className="photo-nav prev"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prevPhoto(e);
-                }}
-                aria-label="Önceki foto"
-              >
-                &lt;
-              </button>
+              <>
+                <button
+                  className="photo-nav prev"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevPhoto(e);
+                  }}
+                  aria-label="Önceki foto"
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "rgba(255, 255, 255, 0.95)",
+                    border: "2px solid #d4a657",
+                    color: "#d4a657",
+                    fontSize: "24px",
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 10,
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                    transition: "all 0.2s ease",
+                    fontWeight: "bold",
+                    lineHeight: "1",
+                    margin: 0,
+                    padding: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#d4a657";
+                    e.currentTarget.style.color = "white";
+                    e.currentTarget.style.transform = "translateY(-50%) scale(1.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                    e.currentTarget.style.color = "#d4a657";
+                    e.currentTarget.style.transform = "translateY(-50%) scale(1)";
+                  }}
+                >
+                  &lt;
+                </button>
+                <button
+                  className="photo-nav next"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextPhoto(e);
+                  }}
+                  aria-label="Sonraki foto"
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "rgba(255, 255, 255, 0.95)",
+                    border: "2px solid #d4a657",
+                    color: "#d4a657",
+                    fontSize: "24px",
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 10,
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                    transition: "all 0.2s ease",
+                    fontWeight: "bold",
+                    lineHeight: "1",
+                    margin: 0,
+                    padding: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#d4a657";
+                    e.currentTarget.style.color = "white";
+                    e.currentTarget.style.transform = "translateY(-50%) scale(1.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                    e.currentTarget.style.color = "#d4a657";
+                    e.currentTarget.style.transform = "translateY(-50%) scale(1)";
+                  }}
+                >
+                  &gt;
+                </button>
+                {/* Fotoğraf sayacı */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "12px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    background: "rgba(0, 0, 0, 0.7)",
+                    color: "white",
+                    padding: "6px 12px",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    zIndex: 10,
+                    pointerEvents: "none",
+                  }}
+                >
+                  {currentPhotoIndex + 1} / {photos.length}
+                </div>
+              </>
             )}
             <img
               className="photo-main"
@@ -309,20 +408,8 @@ export default function DetailPanel({ isOpen, place, onClose }: DetailPanelProps
               alt={placeDetails.name}
               loading="lazy"
               onClick={openFullscreen}
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", width: "100%", height: "auto", maxHeight: "400px", objectFit: "cover", borderRadius: "16px" }}
             />
-            {photos.length > 1 && (
-              <button
-                className="photo-nav next"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nextPhoto(e);
-                }}
-                aria-label="Sonraki foto"
-              >
-                &gt;
-              </button>
-            )}
           </div>
         </div>
       )}
@@ -633,10 +720,16 @@ export default function DetailPanel({ isOpen, place, onClose }: DetailPanelProps
           )}
         </div>
 
-        {!showReviewForm && isConnected && (
+        {!showReviewForm && (
           <button
             type="button"
-            onClick={() => setShowReviewForm(true)}
+            onClick={() => {
+              if (!isConnected) {
+                alert("Yorum yapmak için önce wallet bağlantısı yapmanız gerekiyor.");
+                return;
+              }
+              setShowReviewForm(true);
+            }}
             className="pill primary"
             style={{ width: "100%", marginBottom: "16px" }}
           >
@@ -644,8 +737,20 @@ export default function DetailPanel({ isOpen, place, onClose }: DetailPanelProps
           </button>
         )}
 
-        {showReviewForm && isConnected && (
+        {showReviewForm && (
           <form onSubmit={handleSubmitReview} className="review-form" style={{ marginTop: "16px" }}>
+            {!isConnected && (
+              <div style={{ 
+                padding: "12px", 
+                background: "#fff3cd", 
+                borderRadius: "8px", 
+                marginBottom: "16px",
+                border: "1px solid #ffc107",
+                color: "#856404"
+              }}>
+                ⚠️ Yorum göndermek için wallet bağlantısı gereklidir.
+              </div>
+            )}
             <label htmlFor="reviewRating" style={{ display: "block", marginBottom: "8px" }}>
               Puan: {reviewRating} ⭐
             </label>
