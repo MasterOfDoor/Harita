@@ -39,18 +39,9 @@ Tarayıcıda [http://localhost:3000](http://localhost:3000) adresine gidin.
 
 ## 📱 Base Mini App Olarak Kullanım
 
-### Local Test
-
 1. Geliştirme sunucusunu başlatın: `npm run dev`
-2. Public URL oluşturun: `.\start-base-test.ps1`
-3. Base Developer Platform'da Mini App URL'ini ayarlayın
-4. Base App'te test edin
-
-### Production Deploy
-
-Detaylı deployment rehberi için:
-- [GitHub Deployment Rehberi](./GITHUB_DEPLOY_REHBERI.md)
-- [Base Mini App Deployment](./BASE_MINI_APP_DEPLOYMENT.md)
+2. Base Developer Platform'da Mini App URL'ini ayarlayın
+3. Base App'te test edin
 
 ## 🛠️ Teknolojiler
 
@@ -82,15 +73,6 @@ Detaylı deployment rehberi için:
 - ✅ `.env.local` Git'e commit edilmiyor
 - ✅ Proxy API routes ile güvenli API erişimi
 - ✅ Base blockchain entegrasyonu
-
-Detaylı güvenlik bilgileri için: [BLOCKCHAIN_PROXY_GUVENLIK.md](./BLOCKCHAIN_PROXY_GUVENLIK.md)
-
-## 📚 Dokümantasyon
-
-- [Hızlı Başlangıç](./BASE_MINI_APP_HIZLI_BASLANGIC.md)
-- [Deployment Rehberi](./BASE_MINI_APP_DEPLOYMENT.md)
-- [GitHub Deployment](./GITHUB_DEPLOY_REHBERI.md)
-- [Environment Setup](./ENV_SETUP.md)
 
 ## 🤝 Katkıda Bulunma
 

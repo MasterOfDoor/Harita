@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 const miniapp = {
   name: "Harita",
   version: "1",
-  homeUrl: "https://haritam1.vercel.app/",
-  imageUrl: "https://haritam1.vercel.app/imageurl23.png",
+  homeUrl: "https://harita-six.vercel.app/",
+  imageUrl: "https://harita-six.vercel.app/imageurl23.png",
   // Relative path kullan (32 karakter limit için)
   splashImageUrl: "/logo.png",
   splashBackgroundColor: "#d4a657",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   other: {
-    "base:app_id": "693c58eb8a7c4e55fec73fec",
+    "base:app_id": "693f36a5d19763ca26ddc2e3",
     "fc:miniapp": JSON.stringify({
       version: miniapp.version,
       imageUrl: miniapp.imageUrl,

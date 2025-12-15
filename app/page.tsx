@@ -7,6 +7,7 @@ import { useMapPlaces } from "./hooks/useMapPlaces";
 import { useMapSearch } from "./hooks/useMapSearch";
 import { useMapFilters } from "./hooks/useMapFilters";
 import { usePlaceAnalysis } from "./hooks/usePlaceAnalysis";
+import { useMiniKit } from "./hooks/useMiniKit";
 import { Place } from "./components/DetailPanel";
 import { buildQueryFromFilters } from "./utils/filterHelpers";
 import TopBar from "./components/TopBar";
@@ -25,27 +26,19 @@ const MapComponent = dynamic(() => import("./components/MapComponent"), {
 export default function Home() {
   const { address, isConnected } = useAccount();
   const [isMounted, setIsMounted] = useState(false);
+  const { isReady: miniKitReady, ready: miniKitReadyCallback } = useMiniKit();
 
   // Client-side hydration için
   useEffect(() => {
     setIsMounted(true);
-    
-    // Base Mini App ready callback
-    if (typeof window !== "undefined") {
-      // Base Mini App SDK ready callback
-      if ((window as any).miniKit) {
-        (window as any).miniKit.ready?.();
-      }
-      
-      // Alternative: Coinbase SDK ready callback
-      if ((window as any).coinbaseSDK) {
-        (window as any).coinbaseSDK.ready?.();
-      }
-      
-      // Fallback: Dispatch ready event
-      window.dispatchEvent(new Event("minikit:ready"));
-    }
   }, []);
+
+  // Base Mini App SDK ready callback
+  useEffect(() => {
+    if (isMounted && miniKitReady) {
+      miniKitReadyCallback();
+    }
+  }, [isMounted, miniKitReady, miniKitReadyCallback]);
   const { places, loading: placesLoading, loadPlaces, setPlaces } = useMapPlaces();
   const {
     isSearchOpen,
