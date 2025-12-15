@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt, useConfig } from "wagmi";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { readContract } from "@wagmi/core";
 
 // ReviewNFT Contract ABI (sadece kullanılan fonksiyonlar)
@@ -144,14 +144,42 @@ export function useReviews(placeId: string | null) {
     hash,
   });
 
-  // Transaction başarılı olduğunda review listesini yenile
+  // Pending submission'ları takip et
+  const pendingSubmissionRef = useRef<{
+    resolve: () => void;
+    reject: (error: any) => void;
+    hash: `0x${string}` | null;
+  } | null>(null);
+
+  // Hash set olduğunda pending submission'ı güncelle
   useEffect(() => {
-    if (isConfirmed && hash) {
-      setTimeout(() => {
-        refetchTokenIds();
-      }, 2000); // 2 saniye bekle (blockchain'de işlem tamamlanması için)
+    if (hash && pendingSubmissionRef.current && !pendingSubmissionRef.current.hash) {
+      pendingSubmissionRef.current.hash = hash;
+    }
+  }, [hash]);
+
+  // Transaction başarılı olduğunda review listesini yenile ve promise'i resolve et
+  useEffect(() => {
+    if (isConfirmed && hash && pendingSubmissionRef.current) {
+      // Hash eşleşiyorsa veya ref'te hash yoksa (yeni transaction) resolve et
+      if (!pendingSubmissionRef.current.hash || pendingSubmissionRef.current.hash === hash) {
+        setTimeout(() => {
+          refetchTokenIds();
+        }, 2000); // 2 saniye bekle (blockchain'de işlem tamamlanması için)
+        
+        pendingSubmissionRef.current.resolve();
+        pendingSubmissionRef.current = null;
+      }
     }
   }, [isConfirmed, hash, refetchTokenIds]);
+
+  // Transaction hatası olduğunda promise'i reject et
+  useEffect(() => {
+    if (submitError && pendingSubmissionRef.current) {
+      pendingSubmissionRef.current.reject(submitError);
+      pendingSubmissionRef.current = null;
+    }
+  }, [submitError]);
 
   // Yorum gönder
   const submitReview = async (rating: number, comment: string, photos: string[] = []) => {
@@ -167,17 +195,38 @@ export function useReviews(placeId: string | null) {
       throw new Error("Yorum boş olamaz");
     }
 
-    try {
-      await writeContract({
-        address: REVIEW_NFT_ADDRESS,
-        abi: REVIEW_NFT_ABI,
-        functionName: "mintReview",
-        args: [placeId, rating as 1 | 2 | 3 | 4 | 5, comment, photos],
-      });
-    } catch (error: any) {
-      console.error("Review gönderme hatası:", error);
-      throw error;
+    if (REVIEW_NFT_ADDRESS === "0x0000000000000000000000000000000000000000") {
+      throw new Error("Review contract adresi yapılandırılmamış");
     }
+
+    // Eğer zaten bir submission varsa, önceki promise'i reject et
+    if (pendingSubmissionRef.current) {
+      pendingSubmissionRef.current.reject(new Error("Yeni bir yorum gönderiliyor, önceki işlem iptal edildi"));
+    }
+
+    // Yeni promise oluştur
+    return new Promise<void>((resolve, reject) => {
+      pendingSubmissionRef.current = {
+        resolve,
+        reject,
+        hash: null,
+      };
+
+      try {
+        // writeContract promise döndürmez, sadece transaction'ı başlatır
+        writeContract({
+          address: REVIEW_NFT_ADDRESS,
+          abi: REVIEW_NFT_ABI,
+          functionName: "mintReview",
+          args: [placeId, rating as 1 | 2 | 3 | 4 | 5, comment, photos],
+        });
+        // Transaction hash hook state'inden takip edilecek ve promise resolve edilecek
+      } catch (error: any) {
+        console.error("Review gönderme hatası:", error);
+        pendingSubmissionRef.current = null;
+        reject(error);
+      }
+    });
   };
 
   return {
@@ -192,4 +241,5 @@ export function useReviews(placeId: string | null) {
     refetch: refetchTokenIds,
   };
 }
+
 
