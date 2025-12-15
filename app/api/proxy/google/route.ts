@@ -99,45 +99,42 @@ async function textSearchNew(q: string, lat: string, lng: string, radius: string
     }
 
     const data = await response.json();
-    return data;
+    
+    // Yeni API formatını eski formata çevir (backward compatibility)
+    return {
+      status: data.places?.length > 0 ? "OK" : "ZERO_RESULTS",
+      results: (data.places || []).map((place: any) => ({
+        place_id: place.id,
+        name: place.displayName?.text || "",
+        formatted_address: place.formattedAddress || "",
+        geometry: {
+          location: {
+            lat: place.location?.latitude || 0,
+            lng: place.location?.longitude || 0,
+          },
+        },
+        types: place.types || [],
+        rating: place.rating || null,
+        user_ratings_total: place.userRatingCount || 0,
+        photos: (place.photos || []).map((photo: any) => ({
+          photo_reference: photo.name, // Yeni API'de name kullanılıyor
+          name: photo.name,
+          width: photo.widthPx,
+          height: photo.heightPx,
+        })),
+        website: place.websiteUri || "",
+        price_level: place.priceLevel ? ["FREE", "INEXPENSIVE", "MODERATE", "EXPENSIVE", "VERY_EXPENSIVE"].indexOf(place.priceLevel) : null,
+      })),
+      next_page_token: data.nextPageToken || null,
+    };
   } catch (error: any) {
     // Network errors veya diğer hatalar
-    if (error.message.includes("fetch")) {
+    if (error.message?.includes("fetch")) {
       console.error("[Google API] Network error:", error);
       throw new Error("Failed to connect to Google Places API. Check your internet connection.");
     }
     throw error;
   }
-
-  const data = await response.json();
-  
-  // Yeni API formatını eski formata çevir (backward compatibility)
-  return {
-    status: data.places?.length > 0 ? "OK" : "ZERO_RESULTS",
-    results: (data.places || []).map((place: any) => ({
-      place_id: place.id,
-      name: place.displayName?.text || "",
-      formatted_address: place.formattedAddress || "",
-      geometry: {
-        location: {
-          lat: place.location?.latitude || 0,
-          lng: place.location?.longitude || 0,
-        },
-      },
-      types: place.types || [],
-      rating: place.rating || null,
-      user_ratings_total: place.userRatingCount || 0,
-      photos: (place.photos || []).map((photo: any) => ({
-        photo_reference: photo.name, // Yeni API'de name kullanılıyor
-        name: photo.name,
-        width: photo.widthPx,
-        height: photo.heightPx,
-      })),
-      website: place.websiteUri || "",
-      price_level: place.priceLevel ? ["FREE", "INEXPENSIVE", "MODERATE", "EXPENSIVE", "VERY_EXPENSIVE"].indexOf(place.priceLevel) : null,
-    })),
-    next_page_token: data.nextPageToken || null,
-  };
 }
 
 // Google Places API (New) - Nearby Search
@@ -208,44 +205,41 @@ async function nearbySearchNew(type: string, lat: string, lng: string, radius: s
     }
 
     const data = await response.json();
-    return data;
+    
+    // Yeni API formatını eski formata çevir (backward compatibility)
+    return {
+      status: data.places?.length > 0 ? "OK" : "ZERO_RESULTS",
+      results: (data.places || []).map((place: any) => ({
+        place_id: place.id,
+        name: place.displayName?.text || "",
+        formatted_address: place.formattedAddress || "",
+        geometry: {
+          location: {
+            lat: place.location?.latitude || 0,
+            lng: place.location?.longitude || 0,
+          },
+        },
+        types: place.types || [],
+        rating: place.rating || null,
+        user_ratings_total: place.userRatingCount || 0,
+        photos: (place.photos || []).map((photo: any) => ({
+          photo_reference: photo.name, // Yeni API'de name kullanılıyor
+          name: photo.name,
+          width: photo.widthPx,
+          height: photo.heightPx,
+        })),
+        website: place.websiteUri || "",
+        price_level: place.priceLevel ? ["FREE", "INEXPENSIVE", "MODERATE", "EXPENSIVE", "VERY_EXPENSIVE"].indexOf(place.priceLevel) : null,
+      })),
+      next_page_token: data.nextPageToken || null,
+    };
   } catch (error: any) {
-    if (error.message.includes("fetch")) {
+    if (error?.message?.includes("fetch")) {
       console.error("[Google API] Network error:", error);
       throw new Error("Failed to connect to Google Places API. Check your internet connection.");
     }
     throw error;
   }
-
-  const data = await response.json();
-  
-  // Yeni API formatını eski formata çevir (backward compatibility)
-  return {
-    status: data.places?.length > 0 ? "OK" : "ZERO_RESULTS",
-    results: (data.places || []).map((place: any) => ({
-      place_id: place.id,
-      name: place.displayName?.text || "",
-      formatted_address: place.formattedAddress || "",
-      geometry: {
-        location: {
-          lat: place.location?.latitude || 0,
-          lng: place.location?.longitude || 0,
-        },
-      },
-      types: place.types || [],
-      rating: place.rating || null,
-      user_ratings_total: place.userRatingCount || 0,
-      photos: (place.photos || []).map((photo: any) => ({
-        photo_reference: photo.name, // Yeni API'de name kullanılıyor
-        name: photo.name,
-        width: photo.widthPx,
-        height: photo.heightPx,
-      })),
-      website: place.websiteUri || "",
-      price_level: place.priceLevel ? ["FREE", "INEXPENSIVE", "MODERATE", "EXPENSIVE", "VERY_EXPENSIVE"].indexOf(place.priceLevel) : null,
-    })),
-    next_page_token: data.nextPageToken || null,
-  };
 }
 
 export async function GET(request: NextRequest) {
